@@ -101,7 +101,7 @@ def email_for(rng, scenario, dev, partner, lang):
              f"Hi team,\n\nWe do not agree with the grade {f} for the {m} ({ref_en}). The customer handed it in as grade {q}. "
              f"Can you send us the photos and test results, or adjust the grade?\n\nThanks,\n{contact}"),
             (f"Please review condition assessment",
-             f"Dear Foxway team,\n\nFor {ref_en} you downgraded the device from {q} to {f}. This seems too strict. "
+             f"Dear Trade-in Support team,\n\nFor {ref_en} you downgraded the device from {q} to {f}. This seems too strict. "
              f"Please review the condition assessment.\n\nKind regards,\n{contact}"),
         ],
         "lock": [
