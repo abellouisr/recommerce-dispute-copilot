@@ -45,7 +45,8 @@ textarea{width:100%;min-height:230px;font-family:inherit;font-size:14px;line-hei
 def page(title, body):
     mode = "Claude: " + config.CLAUDE_MODEL if config.llm_enabled() else "Offline mode (rules)"
     integ = []
-    integ.append("Jira" if config.jira_enabled() else "Jira: local")
+    missing = config.jira_missing()
+    integ.append("Jira" if not missing else ("Jira: local" if len(missing) == 4 else "Jira: local – missing " + ", ".join(missing)))
     integ.append("Slack" if config.slack_enabled() else "Slack: local")
     return f"""<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{E(title)} · Dispute Copilot</title><style>{CSS}</style></head><body>

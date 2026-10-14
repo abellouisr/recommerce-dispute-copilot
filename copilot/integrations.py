@@ -5,6 +5,7 @@ data/outbox so the demo works offline and every action is still visible.
 """
 import base64
 import json
+import urllib.error
 import urllib.request
 from datetime import datetime
 
@@ -44,17 +45,32 @@ def create_ticket(case, dispute, final_reply):
         final_reply,
     ]
     if config.jira_enabled():
-        payload = {"fields": {
+        base_team = case["team"].replace(" + Account Manager", "")
+        labels = ["dispute-copilot", case["category"].lower(), case["action"].lower()]
+        if case["escalate"]:
+            labels.append("escalated")
+        fields = {
             "project": {"key": config.JIRA_PROJECT_KEY},
             "issuetype": {"name": config.JIRA_ISSUE_TYPE},
             "summary": summary,
-            "labels": ["dispute-copilot", case["category"].lower()],
+            "labels": labels,
             "description": {"type": "doc", "version": 1, "content": [
                 {"type": "paragraph", "content": [{"type": "text", "text": ln or " "}]} for ln in lines]},
-        }}
+            "components": [{"name": base_team}],
+            "priority": {"name": "High" if case["escalate"] else "Medium"},
+        }
         auth = base64.b64encode(f"{config.JIRA_EMAIL}:{config.JIRA_API_TOKEN}".encode()).decode()
-        res = _post(config.JIRA_BASE_URL.rstrip("/") + "/rest/api/3/issue", payload,
-                    {"Authorization": f"Basic {auth}", "Accept": "application/json"})
+        url = config.JIRA_BASE_URL.rstrip("/") + "/rest/api/3/issue"
+        headers = {"Authorization": f"Basic {auth}", "Accept": "application/json"}
+        try:
+            res = _post(url, {"fields": fields}, headers)
+        except urllib.error.HTTPError as e:
+            if e.code in (401, 403):
+                raise RuntimeError("Jira rejected the login: check JIRA_EMAIL and JIRA_API_TOKEN in config.json") from e
+            # Project may not have the components/priority fields: retry with the basics only.
+            for k in ("components", "priority"):
+                fields.pop(k, None)
+            res = _post(url, {"fields": fields}, headers)
         key = res.get("key", "?")
         return key, f"{config.JIRA_BASE_URL.rstrip('/')}/browse/{key}"
     key = f"LOCAL-{case['dispute_id']}"

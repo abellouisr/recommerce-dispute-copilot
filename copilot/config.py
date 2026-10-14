@@ -13,7 +13,7 @@ DB_PATH = DATA / "recommerce.db"
 
 _file = {}
 if (ROOT / "config.json").exists():
-    _file = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
+    _file = json.loads((ROOT / "config.json").read_text(encoding="utf-8-sig"))  # tolerate Notepad BOM
 
 
 def get(key, default=None):
@@ -41,8 +41,14 @@ def llm_enabled():
     return bool(ANTHROPIC_API_KEY)
 
 
+def jira_missing():
+    names = {"JIRA_BASE_URL": JIRA_BASE_URL, "JIRA_EMAIL": JIRA_EMAIL,
+             "JIRA_API_TOKEN": JIRA_API_TOKEN, "JIRA_PROJECT_KEY": JIRA_PROJECT_KEY}
+    return [k for k, v in names.items() if not v]
+
+
 def jira_enabled():
-    return all([JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN, JIRA_PROJECT_KEY])
+    return not jira_missing()
 
 
 def slack_enabled():

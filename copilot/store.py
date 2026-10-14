@@ -74,6 +74,21 @@ def get_case(con, did):
             "decided_at": row[3], "handling_seconds": row[4], "jira_key": row[5]}
 
 
+def safe_ticket(con, res, d, reply):
+    """Create the Jira ticket; if Jira is unreachable or rejects it, keep a local copy and log why."""
+    try:
+        return integrations.create_ticket(res, d, reply)
+    except Exception as e:
+        audit(con, d["id"], "jira_error", f"{e.__class__.__name__}: {e}")
+        from . import config
+        saved = config.JIRA_BASE_URL
+        try:
+            config.JIRA_BASE_URL = None  # force local fallback for this one ticket
+            return integrations.create_ticket(res, d, reply)
+        finally:
+            config.JIRA_BASE_URL = saved
+
+
 def decide(con, did, decision, final_reply, reviewer_seconds):
     case = get_case(con, did)
     d = dispute(con, did)
@@ -83,12 +98,12 @@ def decide(con, did, decision, final_reply, reviewer_seconds):
     jira_key = None
     if decision == "APPROVED":
         integrations.send_reply(d, final_reply)
-        jira_key, where = integrations.create_ticket(res, d, final_reply)
+        jira_key, where = safe_ticket(con, res, d, final_reply)
         integrations.notify(f"Dispute {did} approved – {res['category']} → {res['action']}"
                             f"{' (credit EUR %s)' % res['credit_eur'] if res['credit_eur'] else ''}. Ticket {jira_key} for {res['team']}.")
         status = "CLOSED"
     elif decision == "TO_HUMAN":
-        jira_key, where = integrations.create_ticket(res, d, "(no reply sent – handed to a person)")
+        jira_key, where = safe_ticket(con, res, d, "(no reply sent – handed to a person)")
         integrations.notify(f"Dispute {did} handed to {res['team']} for manual handling. Ticket {jira_key}.")
         status = "WITH_TEAM"
     else:
