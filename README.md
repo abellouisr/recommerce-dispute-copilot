@@ -69,6 +69,17 @@ Copy `config.example.json` to `config.json` and fill in what you want (or set th
 
 Replies are never emailed; they are written to `data/outbox/email`.
 
+### Jira setup used in the demo
+
+Tickets go to a Kanban project **Dispute Copilot (key `DISP`)**. Each approved or handed-over case becomes a Task with:
+- **Component** = the owning team (Quality Control (Tartu), Partner Operations, Receiving, Warehouse & Logistics, Pricing & Account Management)
+- **Priority** High when escalated, otherwise Medium
+- **Labels** `dispute-copilot`, the case type, the action, and `escalated`
+- **Description** with every check, the decision and the reply sent
+
+To connect: create an Atlassian API token at https://id.atlassian.com/manage-profile/security/api-tokens, then fill `JIRA_EMAIL` (your Atlassian login) and `JIRA_API_TOKEN` in `config.json`. If Jira is unreachable or rejects a ticket, the copilot keeps a local copy and records the error in the audit log, so approving never fails.
+
+
 ## Honest notes
 
 - **Offline rules mode scores ~97% on the labelled set because the rules were written for these synthetic emails.** Real partner emails are messier; that is where Claude is needed and why the evaluation screen exists. The one rules miss is a Finnish email: the rules reply in English, Claude replies in Finnish.
