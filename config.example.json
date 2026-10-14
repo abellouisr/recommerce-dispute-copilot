@@ -1,0 +1,13 @@
+{
+  "ANTHROPIC_API_KEY": "",
+  "CLAUDE_MODEL": "claude-sonnet-4-5",
+  "PRICE_IN_PER_MTOK": 3.0,
+  "PRICE_OUT_PER_MTOK": 15.0,
+  "JIRA_BASE_URL": "",
+  "JIRA_EMAIL": "",
+  "JIRA_API_TOKEN": "",
+  "JIRA_PROJECT_KEY": "",
+  "JIRA_ISSUE_TYPE": "Task",
+  "SLACK_WEBHOOK_URL": "",
+  "PORT": 8501
+}
