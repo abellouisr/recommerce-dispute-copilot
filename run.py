@@ -25,6 +25,8 @@ if __name__ == "__main__":
     elif "--eval" in sys.argv:
         e = store.evaluate(store.connect())
         print(f"{e['n']} cases - {e['mode']} mode - fully correct {e['fully_correct']}% - cost ${e['cost_usd']}")
+        if e.get("llm_failed"):
+            print(f"  WARNING: Claude failed on {e['llm_failed']} cases - {e['llm_error']}")
         for k, v in e["accuracy"].items():
             print(f"  {k:<10} {v}%")
         for r in e["rows"]:

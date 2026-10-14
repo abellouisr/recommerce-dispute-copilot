@@ -82,6 +82,7 @@ To connect: create an Atlassian API token at https://id.atlassian.com/manage-pro
 
 ## Honest notes
 
+- **Results on the 39 labelled cases:** Claude mode 100% fully correct (including the Finnish reply) for about $0.42 for the whole run, roughly 1 cent per case (cost uses the per-token prices in `config.json`). Offline rules mode 97.4%.
 - **Offline rules mode scores ~97% on the labelled set because the rules were written for these synthetic emails.** Real partner emails are messier; that is where Claude is needed and why the evaluation screen exists. The one rules miss is a Finnish email: the rules reply in English, Claude replies in Finnish.
 - Price table, grade scale and defect rules are illustrative. In production they would come from the pricing engine and grading standard.
 - Before production: real data access with least privilege, GDPR review (no consumer personal data in prompts), prompt-injection guardrails, monitoring, and a pilot with one team measuring baseline handling time, credits and rework.

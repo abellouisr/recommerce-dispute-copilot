@@ -1,6 +1,7 @@
 {
   "ANTHROPIC_API_KEY": "",
-  "CLAUDE_MODEL": "claude-sonnet-4-5",
+  "CLAUDE_MODEL": "claude-sonnet-5-5",
+  "ANTHROPIC_WORKSPACE_ID": "",
   "PRICE_IN_PER_MTOK": 3.0,
   "PRICE_OUT_PER_MTOK": 15.0,
   "JIRA_BASE_URL": "https://spmfordummies.atlassian.net",
