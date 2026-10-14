@@ -43,7 +43,13 @@ textarea{width:100%;min-height:230px;font-family:inherit;font-size:14px;line-hei
 
 
 def page(title, body):
-    mode = "Claude: " + config.CLAUDE_MODEL if config.llm_enabled() else "Offline mode (rules)"
+    from . import llm
+    if not config.llm_enabled():
+        mode = "Offline mode (rules)"
+    elif llm.STATUS["checked"] and not llm.STATUS["ok"]:
+        mode = "Claude NOT working – " + llm.STATUS["message"][:90]
+    else:
+        mode = "Claude: " + config.CLAUDE_MODEL
     integ = []
     missing = config.jira_missing()
     integ.append("Jira" if not missing else ("Jira: local" if len(missing) == 4 else "Jira: local – missing " + ", ".join(missing)))
@@ -98,7 +104,8 @@ def case_view(did):
     devrows = "".join(f"<tr><td class='k'>{E(k)}</td><td>{E(', '.join(v) if isinstance(v, list) else str(v))}</td></tr>"
                       for k, v in (dev or {}).items()) or "<tr><td>No matching device</td></tr>"
     steps = "".join(f"<li><b>{E(s['step'])}</b> · {E(s['detail'])} <span class='muted'>({s['ms']} ms)</span></li>" for s in r["steps"])
-    esc = ("<p>" + chip("Escalate", "bad") + " " + E("; ".join(r["escalation_reasons"])) + "</p>") if r["escalate"] else ""
+    llm_warn = ("<p>" + chip("Claude failed", "bad") + " " + E(r["llm_errors"][0]) + "</p>") if r.get("llm_errors") else ""
+    esc = llm_warn + ("<p>" + chip("Escalate", "bad") + " " + E("; ".join(r["escalation_reasons"])) + "</p>") if r["escalate"] else ""
     conf_kind = "ok" if r["confidence"] >= 0.8 else "warn" if r["confidence"] >= 0.6 else "bad"
     u = r["usage"]
     cost = f"{u['calls']} model calls · {u['input_tokens']}+{u['output_tokens']} tokens · ${u['cost_usd']:.4f}" if u["calls"] else "No model calls (offline mode) · $0"
@@ -182,7 +189,9 @@ def eval_view(run=False):
         + "".join(f"<td>{E(str(r['got'][k]))}" + ("" if r['ok'][k] else f"<br><span class='muted'>exp. {E(str(r['expected'][k]))}</span>") + "</td>"
                   for k in ["category", "action", "credit", "escalate", "language"])
         + f"<td>{r['confidence']}</td></tr>" for r in e["rows"])
-    return page("Evaluation", f"""<div class="card"><h1>Evaluation · {e['n']} labelled cases · {E(e['mode'])} mode</h1>
+    warn = (f"<p>{chip('Claude not used', 'bad')} {e['llm_failed']} of {e['n']} cases fell back to rules. Reason: <b>{E(e['llm_error'])}</b></p>"
+            if e.get("llm_failed") else "")
+    return page("Evaluation", f"""<div class="card"><h1>Evaluation · {e['n']} labelled cases · {E(e['mode'])} mode</h1>{warn}
 <p>Fully correct: <b>{e['fully_correct']}%</b> · model cost for the run: ${e['cost_usd']}</p></div>
 <div class="kpis">{acc}</div>
 <div class="card"><table><tr><th>ID</th><th></th><th>Category</th><th>Action</th><th>Credit</th><th>Escalate</th><th>Language</th><th>Conf.</th></tr>{rows}</table></div>""")
@@ -275,6 +284,10 @@ def serve(open_browser=True):
     url = f"http://localhost:{config.PORT}"
     mode = "Claude " + config.CLAUDE_MODEL if config.llm_enabled() else "offline rules mode"
     print(f"Dispute Copilot is running at {url} ({mode}).")
+    if config.llm_enabled():
+        from . import llm
+        st = llm.check()
+        print(("Claude check: OK - " if st["ok"] else "Claude check FAILED: ") + st["message"])
     print("Keep this window open while you use the app. Press Ctrl+C to stop.")
     if open_browser:
         import threading

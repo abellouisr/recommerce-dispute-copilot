@@ -163,10 +163,16 @@ def evaluate(con):
     score = Counter()
     rows, confusion = [], Counter()
     cost = 0.0
+    llm_failed, llm_ok, first_error = 0, 0, ""
     for did, label in con.execute("SELECT id, label FROM disputes ORDER BY id").fetchall():
         lab = json.loads(label)
         r = agent.process(con, did)
         cost += r["usage"]["cost_usd"]
+        if r.get("llm_errors"):
+            llm_failed += 1
+            first_error = first_error or r["llm_errors"][0]
+        if r["usage"]["calls"]:
+            llm_ok += 1
         got = {"category": r["category"], "action": r["action"], "credit": r["credit_eur"],
                "team": r["team"].replace(" + Account Manager", ""), "escalate": r["escalate"],
                "language": r["reading"].get("language")}
@@ -177,7 +183,10 @@ def evaluate(con):
         rows.append({"id": did, "expected": {f: lab[f] for f in fields}, "got": got, "ok": ok,
                      "all_ok": all(ok.values()), "confidence": r["confidence"]})
     n = len(rows)
-    return {"n": n, "mode": "llm" if config.llm_enabled() else "rules",
+    mode = "rules"
+    if config.llm_enabled():
+        mode = "llm" if llm_ok and not llm_failed else ("llm (partly failed)" if llm_ok else "llm FAILED - fell back to rules")
+    return {"n": n, "mode": mode, "llm_failed": llm_failed, "llm_error": first_error,
             "accuracy": {f: round(score[f] / n * 100, 1) for f in fields},
             "fully_correct": round(sum(r["all_ok"] for r in rows) / n * 100, 1),
             "rows": rows, "confusion": confusion, "cost_usd": round(cost, 4)}

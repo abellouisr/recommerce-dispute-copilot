@@ -22,6 +22,8 @@ def get(key, default=None):
 
 ANTHROPIC_API_KEY = get("ANTHROPIC_API_KEY")
 CLAUDE_MODEL = get("CLAUDE_MODEL", "claude-sonnet-4-5")
+# Needed only for Console keys that are not scoped to one workspace (Settings -> Workspaces, "wrkspc_...").
+ANTHROPIC_WORKSPACE_ID = get("ANTHROPIC_WORKSPACE_ID")
 # USD per million tokens, used only for the cost-per-case counter. Set to your model's list price.
 PRICE_IN_PER_MTOK = float(get("PRICE_IN_PER_MTOK", 3.0))
 PRICE_OUT_PER_MTOK = float(get("PRICE_OUT_PER_MTOK", 15.0))

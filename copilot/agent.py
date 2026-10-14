@@ -92,6 +92,7 @@ def process(con, dispute_id):
     t0 = time.perf_counter()
     usage = Usage()
     steps = []
+    llm_errors = []
 
     def step(name, detail):
         steps.append({"step": name, "detail": detail, "ms": round((time.perf_counter() - t0) * 1000)})
@@ -109,7 +110,8 @@ def process(con, dispute_id):
         try:
             reading = llm_read(disp["subject"], disp["body"], usage)
         except Exception as e:  # fall back, never fail the case
-            step("read", f"LLM read failed ({e.__class__.__name__}); using rules")
+            llm_errors.append(str(e))
+            step("read", f"Claude read failed ({e}); using rules")
     if reading is None:
         reading = rules_read(disp["subject"], disp["body"])
     step("read", f"Text category {reading['category']} ({reading['mode']}), language {reading['language']}, "
@@ -229,14 +231,16 @@ def process(con, dispute_id):
             draft = llm_draft(disp, facts, lang, usage)
             step("draft", "Reply drafted by Claude")
         except Exception as e:
-            step("draft", f"LLM draft failed ({e.__class__.__name__}); using template")
+            llm_errors.append(str(e))
+            step("draft", f"Claude draft failed ({e}); using template")
     if draft is None:
         draft = template_draft(facts, lang)
         step("draft", f"Reply drafted from template ({lang})")
 
     return {
         "dispute_id": dispute_id,
-        "mode": "llm" if config.llm_enabled() else "rules",
+        "mode": ("llm" if usage.calls else "llm-failed") if config.llm_enabled() else "rules",
+        "llm_errors": llm_errors,
         "reading": reading,
         "category": category, "action": action, "credit_eur": credit,
         "team": team + (" + Account Manager" if reasons else ""),
